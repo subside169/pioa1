@@ -1,106 +1,116 @@
-from .errors import DuplicateIDError, InvalidYearError, RecordNotFoundError
-
+# Структура записи:
+# (id, title, author, year, genre)
 type BookRecord = tuple[int, str, str, int, str]
 
+Book: list[BookRecord] = []
+def create_record(
+    book_id: int,
+    title: str,
+    author: str,
+    year: int,
+    genre: str,
+) -> BookRecord:
+    """
+    Создаёт новую запись книги.
+    """
 
-class BookTable:
-    def __init__(self) -> None:
-        self._books: list[BookRecord] = []
+    # Проверка года
+    if year < 0:
+        raise ValueError("Год не может быть отрицательным.")
 
-    def create_record(
-        self,
-        book_id: int,
-        title: str,
-        author: str,
-        year: int,
-        genre: str,
-    ) -> BookRecord:
+    # Проверка уникальности id
+    if any(record[0] == book_id for record in Book):
+        raise ValueError(f"Книга с id={book_id} уже существует.")
 
-        if year < 0:
-            raise InvalidYearError("Год не может быть отрицательным.")
+    new_record: BookRecord = (
+        book_id,
+        title.strip(),
+        author.strip(),
+        year,
+        genre.strip(),
+    )
 
-        if any(record[0] == book_id for record in self._books):
-            raise DuplicateIDError(f"Запись с id={book_id} уже существует.")
+    Book.append(new_record)
+    return new_record
 
-        record: BookRecord = (
-            book_id,
-            title.strip(),
-            author.strip(),
-            year,
-            genre.strip(),
-        )
+def select_record(
+    book_id: int | None = None,
+    title: str | None = None,
+    author: str | None = None,
+    year: int | None = None,
+    genre: str | None = None,
+) -> list[BookRecord]:
 
-        self._books.append(record)
-        return record
+    if (
+        book_id is None
+        and title is None
+        and author is None
+        and year is None
+        and genre is None
+    ):
+        return Book.copy()
 
-    def select_record(
-        self,
-        book_id: int | None = None,
-        title: str | None = None,
-        author: str | None = None,
-        year: int | None = None,
-        genre: str | None = None,
-    ) -> list[BookRecord]:
+    result: list[BookRecord] = []
 
-        if (
-            book_id is None
-            and title is None
-            and author is None
-            and year is None
-            and genre is None
-        ):
-            return self._books.copy()
+    for record in Book:
 
-        result = []
+        if book_id is not None and record[0] != book_id:
+            continue
 
-        for record in self._books:
-            if book_id is not None and record[0] != book_id:
-                continue
-            if title is not None and record[1] != title:
-                continue
-            if author is not None and record[2] != author:
-                continue
-            if year is not None and record[3] != year:
-                continue
-            if genre is not None and record[4] != genre:
-                continue
+        if title is not None and record[1] != title:
+            continue
 
-            result.append(record)
+        if author is not None and record[2] != author:
+            continue
 
-        return result
+        if year is not None and record[3] != year:
+            continue
 
-    def update_record(
-        self,
-        book_id: int,
-        title: str | None = None,
-        author: str | None = None,
-        year: int | None = None,
-        genre: str | None = None,
-    ) -> BookRecord:
+        if genre is not None and record[4] != genre:
+            continue
 
-        for i, record in enumerate(self._books):
-            if record[0] == book_id:
+        result.append(record)
 
-                new_record = (
-                    book_id,
-                    title.strip() if title is not None else record[1],
-                    author.strip() if author is not None else record[2],
-                    year if year is not None else record[3],
-                    genre.strip() if genre is not None else record[4],
-                )
+    return result
 
-                if new_record[3] < 0:
-                    raise InvalidYearError("Год не может быть отрицательным.")
+def update_record(
+    book_id: int,
+    title: str | None = None,
+    author: str | None = None,
+    year: int | None = None,
+    genre: str | None = None,
+) -> BookRecord:
+    """
+    Обновляет запись по id.
+    """
 
-                self._books[i] = new_record
-                return new_record
+    for i, record in enumerate(Book):
+        if record[0] == book_id:
 
-        raise RecordNotFoundError(f"Запись с id={book_id} не найдена.")
+            new_record: BookRecord = (
+                book_id,
+                title.strip() if title is not None else record[1],
+                author.strip() if author is not None else record[2],
+                year if year is not None else record[3],
+                genre.strip() if genre is not None else record[4],
+            )
 
-    def delete_record(self, book_id: int) -> None:
-        for i, record in enumerate(self._books):
-            if record[0] == book_id:
-                del self._books[i]
-                return
+            if new_record[3] < 0:
+                raise ValueError("Год не может быть отрицательным.")
 
-        raise RecordNotFoundError(f"Запись с id={book_id} не найдена.")
+            Book[i] = new_record
+            return new_record
+
+    raise ValueError(f"Запись с id={book_id} не найдена.")
+
+def delete_record(book_id: int) -> None:
+    """
+    Удаляет запись по id.
+    """
+
+    for i, record in enumerate(Book):
+        if record[0] == book_id:
+            del Book[i]
+            return
+
+    raise ValueError(f"Запись с id={book_id} не найдена.")
