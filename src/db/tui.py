@@ -119,8 +119,7 @@ def _update_book() -> None:
     title = input("title: ").strip() or None
     author = input("author: ").strip() or None
 
-    year_input = input("year: ").strip()
-    year = int(year_input) if year_input else None
+    year = _read_optional_int("year: ")
 
     genre = input("genre: ").strip() or None
 
