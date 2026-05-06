@@ -1,9 +1,8 @@
-from .tui import run
-
+from .tui import BookTUI
 
 def main():
-    run()
-
+    tui = BookTUI()
+    tui.run()
 
 if __name__ == "__main__":
     main()
