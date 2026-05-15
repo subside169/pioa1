@@ -1,14 +1,38 @@
-from .backend.memory import BookTable
-from .backend.errors import (
-    InvalidYearError,
-    DuplicateIDError,
-    RecordNotFoundError,
-)
+from .backend.memory import MemoryDatabase
+from .backend.file import FileDatabase
+from .backend.csv_file import CsvDatabase
+from .backend.database import Database
+from .backend.errors import DatabaseError
 
 
 class BookTUI:
-    def __init__(self, book_table: BookTable | None = None):
-        self.table = book_table or BookTable()
+    TABLE_NAME = "books"
+    COLUMNS = ("book_id", "title", "author", "year", "genre")
+
+    def __init__(self) -> None:
+        self.db: Database = self._choose_database()
+        self._ensure_table()
+
+    def _choose_database(self) -> Database:
+        print("Выберите тип базы данных:")
+        print("1. In-memory")
+        print("2. Файловая (JSON)")
+        print("3. Файловая (CSV)")
+        choice = input("Ваш выбор: ").strip()
+        if choice == "2":
+            return FileDatabase()
+        elif choice == "3":
+            return CsvDatabase()
+        else:
+            return MemoryDatabase()
+
+    def _ensure_table(self) -> None:
+        try:
+            self.db.create_table(self.TABLE_NAME, self.COLUMNS)
+            print(f"Таблица '{self.TABLE_NAME}' создана.")
+        except DatabaseError as e:
+            # Таблица уже существует – нормально
+            pass
 
     def _print_menu(self) -> None:
         print("\n=== База книг ===")
@@ -30,70 +54,100 @@ class BookTUI:
     def _read_optional_int(self, prompt: str, input_func=input) -> int | None:
         while True:
             raw = input_func(prompt).strip()
-            if raw == "":
+            if not raw:
                 return None
             try:
                 return int(raw)
             except ValueError:
-                print("Ошибка: введите целое число или оставьте поле пустым.")
+                print("Ошибка: введите целое число или оставьте пустым.")
 
     def _add_book(self, input_func=input) -> None:
         print("\nДобавление записи")
-        book_id = self._read_int("id: ", input_func)
+        book_id = self._read_int("book_id: ", input_func)
         title = input_func("title: ").strip()
         author = input_func("author: ").strip()
         year = self._read_int("year: ", input_func)
         genre = input_func("genre: ").strip()
+        record = {
+            "book_id": book_id,
+            "title": title,
+            "author": author,
+            "year": year,
+            "genre": genre
+        }
         try:
-            record = self.table.create_record(book_id, title, author, year, genre)
+            self.db.insert_record(self.TABLE_NAME, record)
             print(f"Запись добавлена: {record}")
-        except (InvalidYearError, DuplicateIDError) as exc:
-            print(f"Ошибка: {exc}")
-
-    def _print_records(self, records: list) -> None:
-        if not records:
-            print("Записи не найдены.")
-            return
-        for record in records:
-            print(record)
+        except DatabaseError as e:
+            print(f"Ошибка: {e}")
 
     def _show_all_books(self) -> None:
         print("\nСписок записей")
-        self._print_records(self.table.select_record())
+        records = self.db.select_records(self.TABLE_NAME)
+        if not records:
+            print("Записи не найдены.")
+        else:
+            for r in records:
+                print(r)
 
     def _find_books_by_filter(self, input_func=input) -> None:
         print("\nПоиск по фильтру (Enter = пропустить поле)")
-        book_id = self._read_optional_int("id: ", input_func)
+        book_id = self._read_optional_int("book_id: ", input_func)
         title = input_func("title: ").strip() or None
         author = input_func("author: ").strip() or None
         year = self._read_optional_int("year: ", input_func)
         genre = input_func("genre: ").strip() or None
-        records = self.table.select_record(
-            book_id=book_id, title=title, author=author, year=year, genre=genre
-        )
-        self._print_records(records)
+        filters = {}
+        if book_id is not None:
+            filters["book_id"] = book_id
+        if title:
+            filters["title"] = title
+        if author:
+            filters["author"] = author
+        if year is not None:
+            filters["year"] = year
+        if genre:
+            filters["genre"] = genre
+        try:
+            records = self.db.select_records(self.TABLE_NAME, **filters)
+            if not records:
+                print("Записи не найдены.")
+            else:
+                for r in records:
+                    print(r)
+        except DatabaseError as e:
+            print(f"Ошибка: {e}")
 
     def _update_book(self, input_func=input) -> None:
         print("\nОбновление записи (Enter = оставить без изменений)")
-        book_id = self._read_int("id: ", input_func)
+        book_id = self._read_int("book_id: ", input_func)
         title = input_func("title: ").strip() or None
         author = input_func("author: ").strip() or None
         year = self._read_optional_int("year: ", input_func)
         genre = input_func("genre: ").strip() or None
+        updates = {}
+        if title is not None:
+            updates["title"] = title
+        if author is not None:
+            updates["author"] = author
+        if year is not None:
+            updates["year"] = year
+        if genre is not None:
+            updates["genre"] = genre
         try:
-            record = self.table.update_record(book_id, title, author, year, genre)
-            print(f"Запись обновлена: {record}")
-        except (RecordNotFoundError, InvalidYearError) as exc:
-            print(f"Ошибка: {exc}")
+            updated = self.db.update_record(self.TABLE_NAME, book_id, **updates)
+            print(f"Запись обновлена: {updated}")
+        except DatabaseError as e:
+            print(f"Ошибка: {e}")
 
     def _delete_book(self, input_func=input) -> None:
         print("\nУдаление записи")
-        book_id = self._read_int("id: ", input_func)
+        book_id = self._read_int("book_id: ", input_func)
         try:
-            self.table.delete_record(book_id)
+            self.db.delete_record(self.TABLE_NAME, book_id)
             print("Запись удалена.")
-        except RecordNotFoundError as exc:
-            print(f"Ошибка: {exc}")
+        except DatabaseError as e:
+            print(f"Ошибка: {e}")
 
     def run(self, input_func=input) -> None:
         while True:

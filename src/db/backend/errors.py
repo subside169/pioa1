@@ -1,15 +1,21 @@
-class BookTableError(Exception):
-    """Базовый класс для ошибок таблицы книг."""
-    pass
+class DatabaseError(Exception):
+    """Базовый класс для ошибок базы данных."""
 
-class InvalidYearError(BookTableError):
-    """Некорректный год издания."""
-    pass
+class TableAlreadyExistsError(DatabaseError):
+    """Попытка создать уже существующую таблицу."""
 
-class DuplicateIDError(BookTableError):
-    """Книга с таким ID уже существует."""
-    pass
+class TableNotFoundError(DatabaseError):
+    """Обращение к несуществующей таблице."""
 
-class RecordNotFoundError(BookTableError):
-    """Запись не найдена."""
-    pass
+class MissingColumnError(DatabaseError):
+    """Отсутствует обязательное поле в записи."""
+
+class UnknownColumnError(DatabaseError):
+    """Поле не определено в схеме таблицы."""
+
+class InvalidStorageDataError(DatabaseError):
+    """Повреждённые данные в файле."""
+
+# Дополнительные ошибки, специфичные для операций update/delete
+class RecordNotFoundError(DatabaseError):
+    """Запись не найдена (например, по id)."""
