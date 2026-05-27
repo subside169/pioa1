@@ -31,8 +31,8 @@ class BookTUI:
             self.db.create_table(self.TABLE_NAME, self.COLUMNS)
             print(f"Таблица '{self.TABLE_NAME}' создана.")
         except DatabaseError as e:
-            # Таблица уже существует – нормально
-            pass
+            # Если таблица уже существует – просто используем существующую
+            print(f"Таблица '{self.TABLE_NAME}' уже существует. Используем существующую.")
 
     def _print_menu(self) -> None:
         print("\n=== База книг ===")
