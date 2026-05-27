@@ -17,19 +17,19 @@ project/
 ├── src/
 │ └── db/
 │ ├── backend/
-│ │ ├── init.py
+│ │ ├── __init__.py
 │ │ ├── errors.py # Пользовательские исключения
 │ │ ├── table.py # Класс Table (структура таблицы)
 │ │ ├── database.py # Абстрактный класс Database
 │ │ ├── memory.py # MemoryDatabase (in-memory)
 │ │ ├── file.py # FileDatabase (JSON)
 │ │ └── csv_file.py # CsvDatabase (CSV)
-│ ├── init.py
-│ ├── main.py # Точка входа
+│ ├── __init__.py
+│ ├── __main__.py # Точка входа
 │ └── tui.py # Класс BookTUI (интерфейс)
 ├── data/ # Каталог для файлов БД (игнорируется Git)
 ├── tests/
-│ ├── init.py
+│ ├── __init__.py
 │ ├── test_memory_database.py # Тесты MemoryDatabase
 │ ├── test_file_database.py # Тесты FileDatabase
 │ ├── test_csv_database.py # Тесты CsvDatabase
