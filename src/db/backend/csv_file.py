@@ -8,9 +8,10 @@ from .table import Table
 class CsvDatabase(Database):
     """База данных, хранящая таблицы в CSV-файлах."""
 
-    def __init__(self, directory: str = "data") -> None:
+    def __init__(self, directory: str = "data", int_columns: list[str] | None = None) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
+        self.int_columns = int_columns or []   # список колонок, которые нужно хранить как целые числа
 
     def _table_exists(self, table_name: str) -> bool:
         return self._get_table_path(table_name).exists()
@@ -27,13 +28,14 @@ class CsvDatabase(Database):
                 columns = tuple(reader.fieldnames)
                 records = []
                 for row in reader:
-                    # Преобразуем числовые значения из строк
                     record = {}
                     for key, value in row.items():
-                        # Пытаемся преобразовать в int, если возможно
-                        try:
-                            record[key] = int(value)
-                        except ValueError:
+                        if key in self.int_columns:
+                            try:
+                                record[key] = int(value)
+                            except ValueError:
+                                record[key] = value  # оставляем строку, если не число
+                        else:
                             record[key] = value
                     records.append(record)
         except (csv.Error, IOError) as e:

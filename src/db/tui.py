@@ -22,7 +22,7 @@ class BookTUI:
         if choice == "2":
             return FileDatabase()
         elif choice == "3":
-            return CsvDatabase()
+            return CsvDatabase(int_columns=["book_id", "year"])
         else:
             return MemoryDatabase()
 
