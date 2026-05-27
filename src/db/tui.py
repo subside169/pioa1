@@ -28,7 +28,7 @@ class BookTUI:
 
     def _ensure_table(self) -> None:
         try:
-            self.db.create_table(self.TABLE_NAME, self.COLUMNS)
+            self.db.create_table(self.TABLE_NAME, self.COLUMNS, indexed_columns=["book_id", "year"])
             print(f"Таблица '{self.TABLE_NAME}' создана.")
         except DatabaseError as e:
             # Если таблица уже существует – просто используем существующую
