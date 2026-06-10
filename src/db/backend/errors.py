@@ -16,6 +16,8 @@ class UnknownColumnError(DatabaseError):
 class InvalidStorageDataError(DatabaseError):
     """Повреждённые данные в файле."""
 
-# Дополнительные ошибки, специфичные для операций update/delete
 class RecordNotFoundError(DatabaseError):
     """Запись не найдена (например, по id)."""
+
+class StorageSaveError(DatabaseError):
+    """Ошибка при сохранении данных в файл."""

@@ -11,7 +11,6 @@ class TestTableIndexes(unittest.TestCase):
         table = Table(self.columns, indexed_columns=["author", "year"])
         self.assertIn("author", table._indexes)
         self.assertIn("year", table._indexes)
-        # Попытка создать индекс по несуществующей колонке
         with self.assertRaises(UnknownColumnError):
             Table(self.columns, indexed_columns=["nonexistent"])
 
@@ -21,11 +20,9 @@ class TestTableIndexes(unittest.TestCase):
         rec2 = {"book_id": 2, "title": "B", "author": "Толстой", "year": 1869, "genre": "роман"}
         table.insert_record(rec1)
         table.insert_record(rec2)
-        # Поиск по индексированному полю
         res = table.select_records(author="Пушкин")
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0]["title"], "A")
-        # Поиск по неиндексированному полю (полный перебор)
         res = table.select_records(year=1869)
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0]["author"], "Толстой")
@@ -34,9 +31,7 @@ class TestTableIndexes(unittest.TestCase):
         table = Table(self.columns, indexed_columns=["author"])
         table.insert_record({"book_id": 1, "title": "X", "author": "Пушкин", "year": 1830, "genre": "поэзия"})
         table.update_record(1, author="Лермонтов")
-        # Старый автор не должен находить запись
         self.assertEqual(len(table.select_records(author="Пушкин")), 0)
-        # Новый автор – да
         self.assertEqual(len(table.select_records(author="Лермонтов")), 1)
 
     def test_index_after_delete(self):

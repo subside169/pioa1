@@ -1,7 +1,9 @@
 import unittest
 import tempfile
+from unittest.mock import patch
 from src.db.backend.file import FileDatabase
-from src.db.backend.errors import TableNotFoundError
+from src.db.backend.errors import TableNotFoundError, StorageSaveError
+
 
 class TestFileDatabase(unittest.TestCase):
     def setUp(self):
@@ -15,7 +17,6 @@ class TestFileDatabase(unittest.TestCase):
     def test_persistence(self):
         self.db.create_table("books", self.columns)
         self.db.insert_record("books", {"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
-        # Создаём новый экземпляр с тем же каталогом
         second_db = FileDatabase(self.temp_dir.name)
         records = second_db.select_records("books")
         self.assertEqual(len(records), 1)
@@ -33,3 +34,10 @@ class TestFileDatabase(unittest.TestCase):
     def test_missing_table(self):
         with self.assertRaises(TableNotFoundError):
             self.db.select_records("books")
+
+    def test_save_error_raises_storage_save_error(self):
+        self.db.create_table("books", self.columns)
+        self.db.insert_record("books", {"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        with patch("json.dump", side_effect=OSError("Disk full")):
+            with self.assertRaises(StorageSaveError):
+                self.db._save_table("books", self.db._load_table("books"))

@@ -22,7 +22,7 @@ class BookTUI:
         if choice == "2":
             return FileDatabase()
         elif choice == "3":
-            return CsvDatabase(int_columns=["book_id", "year"])
+            return CsvDatabase(int_columns=["book_id", "year"], indexed_columns=["book_id", "year"])
         else:
             return MemoryDatabase()
 
@@ -30,9 +30,8 @@ class BookTUI:
         try:
             self.db.create_table(self.TABLE_NAME, self.COLUMNS, indexed_columns=["book_id", "year"])
             print(f"Таблица '{self.TABLE_NAME}' создана.")
-        except DatabaseError as e:
-            # Если таблица уже существует – просто используем существующую
-            print(f"Таблица '{self.TABLE_NAME}' уже существует. Используем существующую.")
+        except DatabaseError:
+            print(f"Таблица '{self.TABLE_NAME}' уже существует.")
 
     def _print_menu(self) -> None:
         print("\n=== База книг ===")
@@ -64,10 +63,22 @@ class BookTUI:
     def _add_book(self, input_func=input) -> None:
         print("\nДобавление записи")
         book_id = self._read_int("book_id: ", input_func)
-        title = input_func("title: ").strip()
-        author = input_func("author: ").strip()
+        title = ""
+        while not title:
+            title = input_func("title: ").strip()
+            if not title:
+                print("Ошибка: название книги не может быть пустым.")
+        author = ""
+        while not author:
+            author = input_func("author: ").strip()
+            if not author:
+                print("Ошибка: автор не может быть пустым.")
         year = self._read_int("year: ", input_func)
-        genre = input_func("genre: ").strip()
+        genre = ""
+        while not genre:
+            genre = input_func("genre: ").strip()
+            if not genre:
+                print("Ошибка: жанр не может быть пустым.")
         record = {
             "book_id": book_id,
             "title": title,
