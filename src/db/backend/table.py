@@ -1,5 +1,5 @@
 from typing import Any
-from .errors import MissingColumnError, UnknownColumnError, RecordNotFoundError
+from .errors import MissingColumnError, UnknownColumnError, RecordNotFoundError, DuplicateIDError
 
 
 class Table:
@@ -23,6 +23,11 @@ class Table:
         if records:
             for record in records:
                 self.insert_record(record)
+
+    @property
+    def indexed_columns(self) -> list[str]:
+        """Список колонок, по которым построены индексы."""
+        return list(self._indexes.keys())
 
     # --------------------------------------------------------------
     # Внутренние методы работы с индексами
@@ -57,6 +62,11 @@ class Table:
     # --------------------------------------------------------------
     def insert_record(self, record: dict[str, Any]) -> None:
         self._validate_record(record)
+        id_column = self.columns[0]
+        record_id = record[id_column]
+        # Проверка уникальности идентификатора
+        if any(rec[id_column] == record_id for rec in self.records):
+            raise DuplicateIDError(f"Запись с {id_column}={record_id} уже существует.")
         self.records.append(record.copy())
         self._add_to_indexes(len(self.records) - 1, record)
 
@@ -75,7 +85,7 @@ class Table:
                 idx = self._indexes[col].get(value)
                 if idx is not None:
                     candidate_indices = idx
-                    break  # используем первый попавшийся индекс
+                    break
 
         if candidate_indices is not None:
             result = []
@@ -85,7 +95,6 @@ class Table:
                     result.append(record.copy())
             return result
         else:
-            # Без индекса – полный перебор
             result = []
             for record in self.records:
                 if all(record.get(k) == v for k, v in filters.items()):

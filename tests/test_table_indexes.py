@@ -1,6 +1,6 @@
 import unittest
 from src.db.backend.table import Table
-from src.db.backend.errors import UnknownColumnError
+from src.db.backend.errors import UnknownColumnError, DuplicateIDError
 
 
 class TestTableIndexes(unittest.TestCase):
@@ -50,3 +50,9 @@ class TestTableIndexes(unittest.TestCase):
         res = table.select_records(author="Пушкин", year=1833)
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0]["title"], "B")
+
+    def test_insert_duplicate_id_raises_error(self):
+        table = Table(self.columns, indexed_columns=["book_id"])
+        table.insert_record({"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        with self.assertRaises(DuplicateIDError):
+            table.insert_record({"book_id": 1, "title": "D", "author": "E", "year": 2020, "genre": "F"})

@@ -2,7 +2,7 @@ import unittest
 import tempfile
 from unittest.mock import patch
 from src.db.backend.file import FileDatabase
-from src.db.backend.errors import TableNotFoundError, StorageSaveError
+from src.db.backend.errors import TableNotFoundError, StorageSaveError, InvalidStorageDataError
 
 
 class TestFileDatabase(unittest.TestCase):
@@ -41,3 +41,11 @@ class TestFileDatabase(unittest.TestCase):
         with patch("json.dump", side_effect=OSError("Disk full")):
             with self.assertRaises(StorageSaveError):
                 self.db._save_table("books", self.db._load_table("books"))
+
+    def test_load_table_file_error(self):
+        self.db.create_table("books", self.columns)
+        self.db.insert_record("books", {"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        # Патчим Path.open в модуле file, чтобы имитировать ошибку чтения
+        with patch("src.db.backend.file.Path.open", side_effect=OSError("Permission denied")):
+            with self.assertRaises(InvalidStorageDataError):
+                self.db._load_table("books")

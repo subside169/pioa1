@@ -1,6 +1,7 @@
 import unittest
 from src.db.backend.memory import MemoryDatabase
-from src.db.backend.errors import TableAlreadyExistsError, TableNotFoundError, MissingColumnError, UnknownColumnError, RecordNotFoundError
+from src.db.backend.errors import TableAlreadyExistsError, TableNotFoundError, MissingColumnError, RecordNotFoundError
+from src.db.backend.errors import UnknownColumnError, DuplicateIDError
 
 class TestMemoryDatabase(unittest.TestCase):
     def setUp(self):
@@ -71,3 +72,9 @@ class TestMemoryDatabase(unittest.TestCase):
     def test_select_from_missing_table(self):
         with self.assertRaises(TableNotFoundError):
             self.db.select_records("books")
+
+    def test_insert_duplicate_id(self):
+        self.db.create_table("books", self.columns)
+        self.db.insert_record("books", {"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        with self.assertRaises(DuplicateIDError):
+            self.db.insert_record("books", {"book_id": 1, "title": "D", "author": "E", "year": 2020, "genre": "F"})

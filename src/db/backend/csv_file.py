@@ -70,7 +70,7 @@ class CsvDatabase(Database):
     def _save_meta(self, table_name: str, table: Table) -> None:
         meta = {
             "int_columns": self.int_columns,
-            "indexed_columns": list(table._indexes.keys())
+            "indexed_columns": table.indexed_columns   # публичное свойство
         }
         meta_path = self._get_meta_path(table_name)
         try:
@@ -82,8 +82,13 @@ class CsvDatabase(Database):
     def _load_meta(self, table_name: str) -> dict:
         meta_path = self._get_meta_path(table_name)
         if meta_path.exists():
-            with meta_path.open("r", encoding="utf-8") as f:
-                return json.load(f)
+            try:
+                with meta_path.open("r", encoding="utf-8") as f:
+                    return json.load(f)
+            except json.JSONDecodeError as e:
+                raise InvalidStorageDataError(f"Файл метаданных таблицы '{table_name}' повреждён.") from e
+            except (OSError, IOError) as e:
+                raise InvalidStorageDataError(f"Не удалось прочитать метаданные таблицы '{table_name}': {e}") from e
         return {
             "int_columns": self.int_columns,
             "indexed_columns": self.indexed_columns

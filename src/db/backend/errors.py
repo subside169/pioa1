@@ -21,3 +21,6 @@ class RecordNotFoundError(DatabaseError):
 
 class StorageSaveError(DatabaseError):
     """Ошибка при сохранении данных в файл."""
+
+class DuplicateIDError(DatabaseError):
+    """Попытка добавить запись с уже существующим идентификатором."""

@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import json
 from pathlib import Path
 from unittest.mock import patch
 from src.db.backend.csv_file import CsvDatabase
@@ -57,3 +58,15 @@ class TestCsvDatabase(unittest.TestCase):
         with patch("csv.DictWriter.writerows", side_effect=OSError("No space left on device")):
             with self.assertRaises(StorageSaveError):
                 self.db._save_table("books", self.db._load_table("books"))
+
+    def test_corrupted_meta_file(self):
+        """Повреждённый .meta.json должен вызывать InvalidStorageDataError."""
+        self.db.create_table("books", self.columns)
+        self.db.insert_record("books", {"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        # Создаём битый метафайл
+        meta_path = Path(self.temp_dir.name) / "books.meta.json"
+        with open(meta_path, "w", encoding="utf-8") as f:
+            f.write("not a json")   # повреждённые данные
+        # При попытке загрузить таблицу должно возникнуть InvalidStorageDataError
+        with self.assertRaises(InvalidStorageDataError):
+            self.db._load_table("books")

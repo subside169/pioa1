@@ -24,6 +24,8 @@ class FileDatabase(Database):
                 data = json.load(f)
         except json.JSONDecodeError as e:
             raise InvalidStorageDataError("Файл таблицы содержит некорректный JSON.") from e
+        except (OSError, IOError) as e:
+            raise InvalidStorageDataError(f"Ошибка чтения файла таблицы '{table_name}': {e}") from e
         return self._deserialize(data)
 
     def _save_table(self, table_name: str, table: Table) -> None:
@@ -41,7 +43,7 @@ class FileDatabase(Database):
         return {
             "columns": list(table.columns),
             "records": table.records.copy(),
-            "indexed_columns": list(table._indexes.keys())
+            "indexed_columns": table.indexed_columns   # публичное свойство
         }
 
     def _deserialize(self, data: dict) -> Table:
