@@ -2,3 +2,5 @@
 .vscode/
 __pycache__/
 .coverage
+data/*.json
+data/*.csv
