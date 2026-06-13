@@ -43,12 +43,20 @@ class FileDatabase(Database):
         return {
             "columns": list(table.columns),
             "records": table.records.copy(),
-            "indexed_columns": table.indexed_columns   # публичное свойство
+            "indexed_columns": table.indexed_columns,
+            "column_types": {col: typ.__name__ for col, typ in table.column_types.items()}
         }
 
     def _deserialize(self, data: dict) -> Table:
-        if "columns" not in data or "records" not in data:
-            raise InvalidStorageDataError("Файл таблицы имеет некорректную структуру.")
+        if not isinstance(data.get("columns"), list) or not all(isinstance(c, str) for c in data["columns"]):
+            raise InvalidStorageDataError("Файл таблицы должен содержать 'columns' как список строк.")
+        if not isinstance(data.get("records"), list) or not all(isinstance(r, dict) for r in data["records"]):
+            raise InvalidStorageDataError("Файл таблицы должен содержать 'records' как список словарей.")
+
         columns = tuple(data["columns"])
         indexed = data.get("indexed_columns", [])
-        return Table(columns, data.get("records", []), indexed_columns=indexed)
+        type_map = {"int": int, "str": str, "float": float, "bool": bool}
+        column_types = {}
+        for col, type_name in data.get("column_types", {}).items():
+            column_types[col] = type_map.get(type_name, str)
+        return Table(columns, data.get("records", []), indexed_columns=indexed, column_types=column_types)

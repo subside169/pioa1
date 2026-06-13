@@ -24,3 +24,9 @@ class StorageSaveError(DatabaseError):
 
 class DuplicateIDError(DatabaseError):
     """Попытка добавить запись с уже существующим идентификатором."""
+
+class InvalidValueTypeError(DatabaseError):
+    """Значение поля не соответствует ожидаемому типу."""
+
+class ImmutableFieldError(DatabaseError):
+    """Попытка изменить неизменяемое поле (например, идентификатор)."""

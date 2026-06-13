@@ -7,10 +7,12 @@ from .table import Table
 class Database(ABC):
     """Общий интерфейс базы данных."""
 
-    def create_table(self, table_name: str, columns: tuple[str, ...], indexed_columns: list[str] | None = None) -> None:
+    def create_table(self, table_name: str, columns: tuple[str, ...],
+                     indexed_columns: list[str] | None = None,
+                     column_types: dict[str, type] | None = None) -> None:
         if self._table_exists(table_name):
             raise TableAlreadyExistsError(f"Таблица '{table_name}' уже существует.")
-        self._save_table(table_name, Table(columns, indexed_columns=indexed_columns))
+        self._save_table(table_name, Table(columns, indexed_columns=indexed_columns, column_types=column_types))
 
     def insert_record(self, table_name: str, record: dict[str, Any]) -> None:
         table = self._load_table(table_name)

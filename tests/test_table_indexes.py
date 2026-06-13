@@ -1,12 +1,18 @@
 import unittest
 from src.db.backend.table import Table
-from src.db.backend.errors import UnknownColumnError, DuplicateIDError
+from src.db.backend.errors import (
+    UnknownColumnError,
+    DuplicateIDError,
+    InvalidValueTypeError,
+    ImmutableFieldError,
+)
 
 
 class TestTableIndexes(unittest.TestCase):
     def setUp(self):
         self.columns = ("book_id", "title", "author", "year", "genre")
 
+    # --- Старые тесты ---
     def test_index_creation(self):
         table = Table(self.columns, indexed_columns=["author", "year"])
         self.assertIn("author", table._indexes)
@@ -56,3 +62,22 @@ class TestTableIndexes(unittest.TestCase):
         table.insert_record({"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
         with self.assertRaises(DuplicateIDError):
             table.insert_record({"book_id": 1, "title": "D", "author": "E", "year": 2020, "genre": "F"})
+
+    # --- Новые тесты ---
+    def test_insert_invalid_type_raises_error(self):
+        # Создаём таблицу со схемой типов
+        table = Table(
+            self.columns,
+            column_types={"book_id": int, "year": int, "title": str, "author": str, "genre": str}
+        )
+        with self.assertRaises(InvalidValueTypeError):
+            table.insert_record({"book_id": "abc", "title": "A", "author": "B", "year": 2000, "genre": "C"})
+
+    def test_update_changes_id_raises_immutable_field_error(self):
+        table = Table(
+            self.columns,
+            column_types={"book_id": int, "year": int, "title": str, "author": str, "genre": str}
+        )
+        table.insert_record({"book_id": 1, "title": "A", "author": "B", "year": 2000, "genre": "C"})
+        with self.assertRaises(ImmutableFieldError):
+            table.update_record(1, book_id=2)

@@ -1,17 +1,26 @@
 from typing import Any
-from .errors import MissingColumnError, UnknownColumnError, RecordNotFoundError, DuplicateIDError
+from .errors import (
+    MissingColumnError,
+    UnknownColumnError,
+    RecordNotFoundError,
+    DuplicateIDError,
+    InvalidValueTypeError,
+    ImmutableFieldError,
+)
 
 
 class Table:
-    """Таблица с фиксированным набором колонок и поддержкой индексов."""
+    """Таблица с фиксированным набором колонок, поддержкой индексов и проверкой типов."""
 
     def __init__(
         self,
         columns: tuple[str, ...],
         records: list[dict[str, Any]] | None = None,
-        indexed_columns: list[str] | None = None
+        indexed_columns: list[str] | None = None,
+        column_types: dict[str, type] | None = None,
     ) -> None:
         self.columns = columns
+        self.column_types = column_types or {}
         self.records: list[dict[str, Any]] = []
         # Индексы: {column_name: {value: [indices_in_self.records, ...]}}
         self._indexes: dict[str, dict[Any, list[int]]] = {}
@@ -64,7 +73,6 @@ class Table:
         self._validate_record(record)
         id_column = self.columns[0]
         record_id = record[id_column]
-        # Проверка уникальности идентификатора
         if any(rec[id_column] == record_id for rec in self.records):
             raise DuplicateIDError(f"Запись с {id_column}={record_id} уже существует.")
         self.records.append(record.copy())
@@ -77,7 +85,6 @@ class Table:
         if not filters:
             return [r.copy() for r in self.records]
 
-        # Пытаемся использовать индекс для одного из фильтров
         candidate_indices = None
         for col in filters:
             if col in self._indexes:
@@ -110,7 +117,14 @@ class Table:
                     if key not in self.columns:
                         raise UnknownColumnError(f"Поле '{key}' не определено в структуре таблицы.")
                     if key == id_column and value != record_id:
-                        raise ValueError("Нельзя изменять идентификатор записи.")
+                        raise ImmutableFieldError(f"Нельзя изменять значение поля '{id_column}'.")
+                    # Проверка типа обновляемого значения (если схема задана)
+                    if key in self.column_types:
+                        expected_type = self.column_types[key]
+                        if not isinstance(value, expected_type):
+                            raise InvalidValueTypeError(
+                                f"Поле '{key}' должно быть типа {expected_type.__name__}, получено {type(value).__name__}."
+                            )
                     updated[key] = value
                 self._update_indexes(i, record, updated)
                 self.records[i] = updated
@@ -128,9 +142,20 @@ class Table:
         raise RecordNotFoundError(f"Запись с {id_column}={record_id} не найдена.")
 
     def _validate_record(self, record: dict[str, Any]) -> None:
+        # Проверка наличия колонок
         missing = [col for col in self.columns if col not in record]
         if missing:
             raise MissingColumnError(f"Отсутствует поле '{missing[0]}' в записи.")
         extra = [col for col in record if col not in self.columns]
         if extra:
             raise UnknownColumnError(f"Поле '{extra[0]}' не определено в структуре таблицы.")
+
+        # Проверка типов, если задана схема
+        for col, expected_type in self.column_types.items():
+            value = record[col]
+            if value is None:
+                raise InvalidValueTypeError(f"Поле '{col}' не может быть None.")
+            if not isinstance(value, expected_type):
+                raise InvalidValueTypeError(
+                    f"Поле '{col}' должно быть типа {expected_type.__name__}, получено {type(value).__name__}."
+                )

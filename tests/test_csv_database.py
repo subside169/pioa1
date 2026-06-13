@@ -1,6 +1,5 @@
 import unittest
 import tempfile
-import json
 from pathlib import Path
 from unittest.mock import patch
 from src.db.backend.csv_file import CsvDatabase

@@ -27,8 +27,17 @@ class BookTUI:
             return MemoryDatabase()
 
     def _ensure_table(self) -> None:
+        column_types = {
+            "book_id": int,
+            "title": str,
+            "author": str,
+            "year": int,
+            "genre": str
+        }
         try:
-            self.db.create_table(self.TABLE_NAME, self.COLUMNS, indexed_columns=["book_id", "year"])
+            self.db.create_table(self.TABLE_NAME, self.COLUMNS,
+                                 indexed_columns=["book_id", "year"],
+                                 column_types=column_types)
             print(f"Таблица '{self.TABLE_NAME}' создана.")
         except DatabaseError:
             print(f"Таблица '{self.TABLE_NAME}' уже существует.")

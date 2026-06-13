@@ -11,11 +11,13 @@ class CsvDatabase(Database):
 
     def __init__(self, directory: str = "data",
                  int_columns: list[str] | None = None,
-                 indexed_columns: list[str] | None = None) -> None:
+                 indexed_columns: list[str] | None = None,
+                 column_types: dict[str, type] | None = None) -> None:
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.int_columns = int_columns or []
         self.indexed_columns = indexed_columns or []
+        self.column_types = column_types or {}
 
     def _table_exists(self, table_name: str) -> bool:
         return self._get_table_path(table_name).exists()
@@ -41,14 +43,21 @@ class CsvDatabase(Database):
                             try:
                                 record[key] = int(value)
                             except ValueError:
-                                record[key] = value
+                                raise InvalidStorageDataError(
+                                    f"Невозможно преобразовать значение '{value}' в поле '{key}' в целое число."
+                                )
                         else:
                             record[key] = value
                     records.append(record)
         except (csv.Error, IOError) as e:
             raise InvalidStorageDataError("Ошибка чтения CSV-файла.") from e
 
-        return Table(columns, records, indexed_columns=meta.get("indexed_columns", []))
+        type_map = {"int": int, "str": str, "float": float, "bool": bool}
+        column_types = {}
+        for col, type_name in meta.get("column_types", {}).items():
+            column_types[col] = type_map.get(type_name, str)
+
+        return Table(columns, records, indexed_columns=meta.get("indexed_columns", []), column_types=column_types)
 
     def _save_table(self, table_name: str, table: Table) -> None:
         csv_path = self._get_table_path(table_name)
@@ -70,7 +79,8 @@ class CsvDatabase(Database):
     def _save_meta(self, table_name: str, table: Table) -> None:
         meta = {
             "int_columns": self.int_columns,
-            "indexed_columns": table.indexed_columns   # публичное свойство
+            "indexed_columns": table.indexed_columns,
+            "column_types": {col: typ.__name__ for col, typ in table.column_types.items()}
         }
         meta_path = self._get_meta_path(table_name)
         try:
@@ -91,5 +101,6 @@ class CsvDatabase(Database):
                 raise InvalidStorageDataError(f"Не удалось прочитать метаданные таблицы '{table_name}': {e}") from e
         return {
             "int_columns": self.int_columns,
-            "indexed_columns": self.indexed_columns
+            "indexed_columns": self.indexed_columns,
+            "column_types": {col: typ.__name__ for col, typ in self.column_types.items()}
         }
