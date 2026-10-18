@@ -15,24 +15,22 @@ Python
 
 ## Структура проекта
 ```
-project/
-│
+pioa1/
 ├── src/
-│ └── db/
-│ ├── backend/
-│ │ ├── init.py
-│ │ ├── errors.py # Пользовательские исключения
-│ │ └── memory.py # Класс BookTable (CRUD)
-│ ├── init.py
-│ ├── main.py # Точка входа
-│ └── tui.py # Класс BookTUI (интерфейс)
-│
+│   └── db/
+│       ├── backend/
+│       │   ├── __init__.py
+│       │   ├── errors.py      # Пользовательские исключения
+│       │   └── memory.py      # Класс BookTable (CRUD)
+│       ├── __init__.py
+│       ├── __main__.py        # Точка входа
+│       └── tui.py             # Класс BookTUI (интерфейс)
 ├── tests/
-│ ├── init.py
-│ ├── test_memory.py # Тесты для BookTable
-│ ├── test_tui.py # Тесты для BookTUI
-│ └── test_main.py # Тест точки входа
-│
+│   ├── __init__.py
+│   ├── test_main.py           # Тест точки входа
+│   ├── test_memory.py         # Тесты для BookTable
+│   └── test_tui.py            # Тесты для BookTUI
+├── .gitignore
 └── README.md
 ```
 
@@ -51,8 +49,8 @@ project/
 
 ### Клонирование и запуск
 ```bash
-git clone <ссылка_на_репозиторий>
-cd <папка_проекта>
+git clone https://github.com/subside169/pioa1.git
+cd pioa1
 python -m src.db
 ```
 ## Тестирование
@@ -68,4 +66,3 @@ python -m pytest
 pip install pytest-cov
 pytest --cov=src --cov-report=term-missing
 ```
-
